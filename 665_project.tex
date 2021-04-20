@@ -1,0 +1,247 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.75in]{geometry}
+\geometry{a4paper}
+\usepackage[T1]{fontenc} % Support Icelandic Characters
+\usepackage[utf8]{inputenc} % Support Icelandic Characters
+\usepackage{graphicx} % Support for including images
+\usepackage{hyperref} % Support for hyperlinks
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\newcommand*{\X}{\textbf{?}}%
+\newcommand*{\Y}{\textbf{\fbox{?}}}%
+\newcommand*{\Z}{\makebox[1ex]{\textbf{$\cdot$}}}%
+
+\def\Date{April 12, 2021} %February 24, 2019}
+
+% %------------------------------------------------------------------
+% % TITLE
+% %------------------------------------------------------------------
+% \title{
+% \vspace{0.5 cm}
+% TITLE HERE \\
+% Colloquium \\
+% \Large SPEAKER / AFFILIATION HERE
+% }
+%
+%
+%
+% \author{
+%     Your name 1, Your name 2, Your name 3, Your name 4 \\
+% Department of Statistics and Operations Research \\
+% UNC Chapel Hill
+%     }
+%
+% \date{Colloquium Date}
+%
+%
+% %------------------------------------------------------------------
+% % DOCUMENT START HERE
+% %------------------------------------------------------------------
+% \begin{document}
+% \maketitle
+
+
+\begin{document}
+
+\begin{titlepage}
+\lhead*{{\vspace*{-20mm}\hspace*{-15mm}\includegraphics[scale=.15]{unc.jpg}}}
+
+\vspace*{10mm}
+
+\begin{center}
+	{\bf \Large 
+	 A Penalization Approach to Breast Cancer Diagnosis \\
+	Andy Ackerman\\ 
+	Department of Statistics and Operations Research \\
+	UNC Chapel Hill\\
+	\Date
+	
+	}
+\end{center}
+
+\end{titlepage}
+
+%% Refernces
+%\includepdf[pages={1-2},offset=5mm 0mm]{r.pdf}
+%\blankpage
+
+
+%%%%% Pagestyles
+\pagestyle{fancy}
+\fancypagestyle{plain}{\fancyfoot[C]{- \thepage\ -}}
+\fancyfoot[C]{- \thepage\ -}
+\fancyhead[L]{\it\small STOR 665}
+\fancyhead[C]{\it\small Final Project }
+\fancyhead[R]{\it\small \Date}
+\setcounter{page}{1}
+
+\begin{abstract}
+
+	Cancer is one of the most pervasive tragedies of our species.  It consistently mounts a staggering death toll, second only to heart disease in the United States.  Of the various types of cancer, breast cancer is potentially the most ubiquitous and certainly the most common form of cancer among women.  Roughly speaking, in the time it takes one to read this abstract, a woman will have been diagnosed with breast cancer.  It is not merely the prevalence of this disease, but its grim lethality that makes it so unnerving.  That said, the extent to which cancer is lethal is drastically influenced by the stage at which the cancer is detected.  That is to say, life expectancy presents a stark decline with late stage (3-4) cancer of any kind (certainly including breast), and the stage of cancer is often uniquely determined by early detection (or the lack thereof).  
+
+	Against such a salient backdrop, we hope to add to the rich literature aiming to enhance the precision, efficiency and accuracy of detection methods.  The method presented below will work in concert with data acquired by medical professionals at the University of Wisconsin via \emph{fine needle aspirate} (FNA).  This technique is less invasive yet also more sensitive than historical alternatives, but it does present a litany of metrics by which to gauge the potential malignancy of data.  Specifically, FNA provides statisticians with a high-dimensional set of covariates that are potentially influential in determining prognosis.  It is thus the onus of our field and the aim of this paper to determine which in this slew of covariates are most impactful and to what degree they are benign.   
+	
+	Historically, the model selection process has been contingent upon linear programming algorithms that elicit highly accurate results yet may leave much to be desired in the realm of efficiency.  To this end, we develop and implement an \emph{Elastic-Net} approach to variable selection that is believed to heighten efficiency (specifically run time of the program) while maintaining comparable accuracy.  Under the broad umbrella of “Elastic-Net” a combination of solely ridge, solely lasso, and hybrid models will be considered with the most efficient submitted for application.  Moreover, various methods of optimizing the penalization parameter, $\lambda$, will be considered.  Finally, the very nature of such a logistic-lasso (or ridge) regression means that it stands somewhat at the precipice of modern theory.  In contrast to influential-observation-identification or model performance assessment for linear-lasso, the analogous concepts for the logistic lasso are ongoing topics of research.  Here, we will merely proffer our own suggestions as to intuitive procedures and defend their tractability therein.  However, their novelty should not be taken as much as a weakness of the approach but rather as a vein of potential expansion.  
+	
+	It is our sincere hope that this method provides some insight, however marginal, that will contribute to a day wherein the miasma of death surrounding cancer is allayed.  
+	
+\end{abstract}
+
+\section{Introduction}
+
+The turn of the decade has been distinguished by the single most infectious and debilitating global pandemic in over a century.  Not since the 1918 “Bird-Flu” has a virus so completely decimated populations and with it, morale.  Yet, for all of its well-warranted notoriety, Corona-19 was only the third leading cause of death in the United States in 2020.  Responsible for over 598,000 deaths last year alone, cancer nearly doubled the already staggering death toll of Corona-Virus.  Among this cacophony of grief, breast cancer affects the lives of more women than any other form of cancer, save for melanoma \footnote{This is not to say that breast cancer affects women alone.  Roughly 2500 men are diagnosed with breast cancer in the United States each year in the modern age.  Rather, we pay particular attention to incidence in women, as this is who the diseases disproportionately affects.}.  It is estimated that over 330,000 women will be diagnosed with breast cancer this year alone.  Roughly 43,600 of these women will tragically succumb to the insidious disease \footnote{https://www.cancer.net/cancer-types/breast-cancer/statistics}.  
+
+	Of these 43,600 deaths, a staggering majority will be women in late stage progression.  By this I mean the tumor has metastasized and now exists beyond just breast tissue.  To put this intuition into perspective the five-year survival rate of a stage 0-1 breast cancer patient is 99 \%.  This stands in stark contrast to the 28 \% survival rate of a patient in stage 4.  Thus, it should be apparent that detecting cancerous cells early is tantamount to numerous years of added life expectancy.  It is towards this end that we aspire.  
+	
+\subsection{Data Description}
+
+The data, originally garnered from the machine-learning repository \footnote{http://archive.ics.uci.edu/ml/datasets/} by way of the University of Wisconsin, consists of 569 unique observations, each with 32 distinct features.  Said features include:  patient ID, Diagnosis Category (malignant or benign), and ten real-valued cell-nucleus descriptors.  These are as follows: radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, and fractal dimension.  Subsequently, each of these ten covariates has three corresponding metrics associates with it — mean, standard error, and worst (here having the meaning of largest) mean — to produce a total of 32 features.  It is worth noting that the more qualitative metrics have been formulated as intuitive quantitative analogies.  For example, compactness is given by $\frac{P^2}{A-1}$ where P is the perimeter of the cell nucleus and A is the corresponding area.  Likewise smoothness is a metric of local variation in radius length.  
+
+	
+	In an era of genomic analysis lending itself to potentially millions of features, a mere 32 seems relatively innocuous.  That said, such dimensionality still warrants specific care both within visualization and modeling.  Restricting attention to visualizing the data, it will behoove the model to understand how to data is oriented.  This can be accomplished, at least in part, via boxplots and heat maps.  \footnote{For brevity's sake, not all visualizations and models are depicted in full force here.  To see them in full detail visit }The former elucidates distributional qualities including skewness while the latter induces an intuition as to presence of clustering structure.  Consider first, the boxplots presented in Figure 	~\ref{fig:box}.  Scale discrepancies are immediately evident via the plot of the raw data (left).  Therefore, it may be prudent to scale the data and reassess overall trends (right).  With a more comparable scale in place, we are able to discern the prevalence of outlying observations in nearly all features.  Inasmuch as Ridge, and to an extent Lasso, regression are not particularly robust against outliers \footnote {Ridge regression applies shrinkage to the sum of squared coefficients.  Therefore, when outliers influence this penalization, it does so with quadratic growth.  By contrast, Lasso penalizes via the sum of absolute values.  In such a way, outliers have a more linear effect on shrinkage.  Thus, it is not totally impervious to outliers but considerably more robust than Ridge.} (in fact they are quite sensitive to influential data points as a whole), it will be advantageous to pay particular attention to influence diagnostics.  
+	
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{.5\textwidth}
+	\centering
+	\includegraphics[scale=.38]{Boxplot1.png}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\centering
+	\includegraphics[scale=.38]{Boxplot2.png}
+\end{minipage}%
+\caption{Holistic Boxplots: First of Raw then Scaled Data}\label{fig:box}
+\end{figure}
+	
+	
+	Consider now the geometric structure of the data.  Figure \ref{fig:heat} depicts a two-dimensional scatterplot of the first principal component analysis against the second of these components.  Recall that the purpose of PCA is to distill the complexities inherent in high dimensional data into linear combinations of these covariates, thereby considering information from all available covariates but reducing the dimensionality.  To this end, eigenvector decomposition is used to produce mutually orthogonal covariates.  The orthogonality facilitates interpretation of the covariate effects, while the linear combinations of the original features have seemingly encompassed some portion of the total variability present higher dimension.  Quite apparently, the larger the relative proportion of variability explained in a given PCA, the more holistically this singular covariates represents the higher dimensional data.  
+	
+	Along these lines, a number of key observations may be derived from the scatter plot and subsequently used to inform the interpretation of the heat map and later, data as a whole.  First among these is the presence of some clustering.  A relatively large portion (44.27 \%) of the total variability in the data is explained via principal component one.  This would seem to indicate that it is possible to characterize data rather representatively with one set of linear combinations of the original covariates.  Such a conclusion is buoyed by the form of the scatterplot.  Note the dense conglomeration of data points around (0,0) PCA1 against PCA2.  This would tend to indicate the covariates may be grouped by their relation to fellow covariates and their relative influence on the response.  
+	
+	Now it is worth reiterating that our model is not predicated on a PCA reduction of dimension but rather an elastic net reduction.  This is chiefly because our concern is not only predictive accuracy but unique impact of individual covariates.  Such granularity of insight is obscured when the covariates are considered collectively via PCA.  By contrast, elastic net (Lasso more specifically) will choose to prioritize particularly pertinent features while omitting ones that are less so.  With this digression in place, the presence of clustering made apparent by PCA does reinforce the intuition that there are subsets of covariates that influence the response in similar ways.  If we are able to extract the most salient of these covariates in any given cluster or otherwise find a cluster of holistically influential covariates, a reduced model of marked accuracy may well be possible.  
+	
+	To further hone these intuitions, we also consider a heat map.  When viewed in conjunction with the PCA scatterplot, the heat map shows not only the presence of clustering (which is already believed to exist) but around what covariates clusters may be forming.  This could again lend a crude intuition as to what covariates are likely to remain in a reduced model.   Observe deep hues associated with clustering in the worst smoothness and worst text.  Specifics of model reduction will be reserved for section 4, but it is no accident that these covariates are retained despite a fairly selective model reduction.  
+	
+	
+\begin{figure}[htbp]
+\centering
+\begin{minipage}{.5\textwidth}
+	\centering
+	\includegraphics[scale=.38]{pca.png}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\centering
+	\includegraphics[scale=.50]{heat.png}
+\end{minipage}%
+\caption{Two Dimensional PCA Scatterplot and Corresponding Heat Map}\label{fig:heat}
+\end{figure}
+
+\subsection{Biological Intuition}
+
+	The analysis portrayed in this approach are couched within and applied to an oncological setting.   Proper understanding of the motivation behind acquiring specific cell measurements informs the interpretation of our own model.  To that end, a tumor is, in its essence, distinguished by unmitigated cell growth and reproduction.  If said growth is relatively stunted and slow the tumor is characterized as benign, signifying its functional abnormality but also its relatively low health risk.  This is juxtaposed with malignant tumors which earn the nomenclature "cancerous".  These cells grow extremely rapidly and spread to tissue outside of their site of origin.  In such a way, these malignant cells may crowd out and preclude the functioning of healthy cells often resulting in the deleterious symptoms associated with cancer.   
+	
+	The malignant cell often differentiates itself through structural anomalies within the nucleus.  More pointedly, Baba and  Câtoi describe describe the cell as being, "...characterized by a large nucleus, having an irregular size and shape, and the nucleoli are prominent, the cytoplasm is scarce and intensely colored or, on the contrary, is pale".  
+	
+	With such an intuition in hand, it seems intuitive that metrics such as radius, area, and perimeter, would be compiled as proxies for size.  Likewise, metrics such as concavity, smoothness, and symmetry seem suitable surrogates for shape.  Towards a more tangible hypothesis, it would seem logical to expect a positive coefficient (and by extension relationship) between any of the size parameters and malignancy.   Similarly, a positive relationship between concavity and/or concave points could be reasonably anticipated, as heightened numbers of concave points within a cell allow for more cites for cells to touch.  That is to say, concavity exasperates compact groupings of cells.  Subsequently, this can enable unwarranted cell division when natural inhibitions, such as overcrowding limitations, are seemingly overridden.   Having now outlined the form of the data and motivated the biological intuitions undergirding this statistical application, let us turn to the methodology itself.  
+	
+	\section{Methodology}
+	
+	Insofar as the data described is binary in its response, the logistic model is a natural one.  However, as has already been discussed, this will be quite the expansive full model.  More specifically,
+	\begin{center}
+\label{eqn:model}
+$Y_i \thicksim Bin(1,\pi_i), X_i, i \in [1,...,32]$. 
+\end{center}  
+
+Here the canonical link, in this case the logit, will be used.  Therefore, a more explicit model for the data can be given by 
+
+
+\begin{equation}
+\label{eqn:model}
+g(\pi)=log(\frac{\pi}{1-\pi})=\beta_0+\beta_1X_1+...+\beta_{32}X_{32}.
+\end{equation}
+
+  Note, inherent to the logistic regression is the necessity for estimation via numerical approximation.  That is to say, the log likelihood under the canonical link, 
+   \begin{center}
+  $l(y|\beta)=\sum_{i=1}^{32} [y_ix_i^T\beta-log(1+e^{x_i^T\beta})]$, 
+  \end{center}
+
+ has no closed form solution.  Therefore, Iteratively Re-weighted Least Squares (IRLS) is often implemented in low-dimensional data to approximate coefficient estimates.  
+  
+  	Recall that in the context of the canonical link, IRLS will coincide with the Newton-Raphson Method as the Hessian Matrix will be equivalent to the negative Fisher-Information Matrix.  In particular, each method will update estimates for coefficient $\beta$ via the updating rule 
+	
+\begin{center}
+$\beta^{(k+1)}=\beta^{(k)}-I^{-1}(\beta^{(k)})s(\beta^{(k)})$
+\end{center}
+
+ until the approximation is within a user-defined threshold.  As previously mentioned, however, the unique challenge of such a high-dimensional data set is ensuring convergence of such an algorithm in a timely manner (or at all).  Thus estimation will instead be achieved by means of penalization and coordinate descent.  
+ 	
+	With regard to this penalization approach, our method employs the "glmnet".  This R-Package written by Friedman et. al, provides a "bridge" between the shrinkage estimator of Ridge Regression and the discarding estimator of Lasso.  By this I mean. Ridge tends draw to the estimates of correlated coefficients towards each other, thereby "shrinking" them, whereas Lasso is known discard fringe or tangential covariates.  The extent to which one approach is favored over the other is controlled, in general, via the $\alpha$ parameter and will be considered when deriving models for our procedure.   Diverging from the path of IRLS, the elastic net will minimize
+	\begin{equation}
+	\begin{align*}
+\label{eqn:net}
+(y-X\beta)^T(y-X\beta), \sum_{j=1}^{32} \beta_j^2 \le t^2 \\
+(y-X\beta)^T(y-X\beta), \sum_{j=1}^{32} |\beta_j| \le t
+\end{align*}
+\end{equation}  
+
+ for Ridge and Lasso respectively.   Again, to ensure efficiency, as IRLS may be computationally cumbersome, cyclical coordinate descent is used to optimize \eqref{eqn:net}.   In essence, this approach aims to discern a global minimizer by minimizing a convex, differentiable $f:\mathbb{R}^n \rightarrow \mathbb{R}$ at each point x along each coordinate axis.  That is, in comparison to IRLS, coordinate descent will utilize the update rule given by, 
+ 
+ \begin{center}
+ $x_n^{(k)} \in \arg\max_{x_2} f(x_1^{(k)},x_2^{(k)},x_3^{(k)},...,x_n)$.
+ \end{center}
+
+As this algorithm is but a means to our own analysis rather than the method itself, and insofar as it is thoroughly discussed in the work Friedman and Tibshirani, we will not belabor the point with details here.  
+
+
+\subsection{Model Selection}
+
+\subsection{Diagnostics}
+	Of the myriad diagnostic measures worth considering, one of the most pressing for penalized regression is that of influential and high leverage points.  As already observed in ~\ref{fig:box}, the potential for outliers skewing results is a distinct one.  However, as opposed to elastic net applied to a linear regression, the logistic elastic net provides some hurdles to be overcome when assessing the presence and pertinence of such data points.  Specifically, well known metrics such as Cook's Distance and DFBETAS have built-in R functions to be applied almost at whim.  However, the same cannot be said when passing in a model of form "glmnet" rather than merely "linear model".  The most cogent way to circumvent this problem (without writing a novel package itself) is to use the selected covariates from a elastic net output to rederive a conventional logistic regression.  That is to say, once variables are discarded (in the case of lasso and elastic net), the ones that remain will constitute the full model for a new logistic regression, the likes of which can be passed into such diagnostic functions.  
+	
+	Now, it is worth noting that the estimates gleaned from this logistic regression will differ from the elastic net.  This is only natural as, after all, these represent different models.  However, we argue that insofar as the logistic model makes the same model assumptions on the structure of the underlying data and takes as relevant covariates the ones selected from the elastic net, it represents the most tenable analogy to the elastic net available.  
+	
+	As one final point, it is worth making explicit that many of the model assumptions that undergird application of  Generalized Linear Regression are relaxed.  This is precisely the merit of such a penalization approach -- to allow for estimation in the presence of say, heteroscedasticity, overfitting, or multicollineartity.  Therefore, diagnostics of these sort are not necessary and will not be included for penalization models.  \footnote {That is not to say these could not be considered to formally justify the need of penalization.  While it is certainly intuitive that such high dimensional data could benefit from such a regularization approach, explicit consideration of the model assumptions could justify the application in way that mere intuition cannot.  To this end, we considered a base logistic regression with all 32 covariates that derives its parameter estimates via the Fisher Scoring Algorithm.  Such a "wide" model did not even converge, so application of some penalization method is not only suggested but absolutely necessary.  As a final precautionary measure, a logistic regression with a smaller penalization, namely penalization of the log-likelihood by the Jeffreys prior, was considered.  This model also reached its maximum number of iterations before convergence, and thus elastic net is rendered appropriate and well warranted.}
+
+\subsection{Model Assessment}
+
+	Evaluating the predictive accuracy of our model is another area wherein the logistic nature of our data will precipitate alternative methods.  Root mean-squared error (RSME) is the default metric in most linear glmnet circumstances.  However, the binary nature of this data precludes such application.  Consequently, we will derive inspiration from metrics more akin to the discipline of machine learning than classical statistical theory.  
+	
+	To that end, we will partition the dataset into constituent training and test subsets, with 80\% lying in the former and 20\% in the latter.  Once the model is derived and trained on the requisite subset, it will then be applied and evaluated via the test set by the proportion of correct classifications (benign or malignant).  Moreover, to bolster the specificity of such a metric, a confusion matrix will provide insight into the precise ways in which the model erred (for example the percentage of type 1 error as opposed to type 2).  This confusion matrix will serve the additional purpose of ensuring that marked levels of predictive efficiency are truly emblematic of the efficacy of the model, and not merely induced by a data set so rare in its malignant diagnosis that even inefficient models would perform commendably.  
+
+	
+	 
+\newpage
+\section{References}
+\bibliography{References}
+\begin{enumerate}
+	\item Ahmad FB, Anderson RN. The Leading Causes of Death in the US for 2020. JAMA. Published online March 31, 2021. doi:10.1001/jama.2021.5469
+
+	\item Mangasarian, Olvi L, et al. “Breast Cancer Diagnosis and Prognosis Via Linear Programming.” Operations Research, vol. 43, no. 4, 1 Aug. 1995. 
+	
+	\item Baba AI, Câtoi C. Comparative Oncology. Bucharest (RO): The Publishing House of the Romanian Academy; 2007. Chapter 3, TUMOR CELL MORPHOLOGY. Available from: https://www.ncbi.nlm.nih.gov/books
+	
+	\item Wang Weixing and Lin Liqun (November 23rd 2016). Segmentation of Fuzzy and Touching Cells Based on Modified Minimum Spanning Tree and Concave Point Detection, Recent Advances in Image and Video Coding, Sudhakar Radhakrishnan, IntechOpen, DOI: 10.5772/65029. 
+
+	\item Friedman, Jerome, Trevor Hastie, and Robert Tibshirani. 2010. “Regularization Paths for Generalized Linear Models via Coordinate Descent.” Journal of Statistical Software, Articles 33 (1): 1-22. 
+	
+\end{enumerate}
+	
+	
+	
+\end{document}
+
+
+
+
+
+
+
+
+
+
