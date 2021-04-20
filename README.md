@@ -12,6 +12,8 @@ USAGE
 -----
 #### R.Studio, Latex
 
+Rmd output should be reproducible from the raw code and accompanying data.  Note, the .tex files include various images not included in this github page.  In order to run the .tex file independently, it is necessary to first reproduce these illustrations via the Rmd and ammend the latex files accordingly.  Outside of this small inconvenience, the methods and procedures (including random processes) should be entirely reproducible (with seeds clearly defined within the code).  
+
 
     
      
