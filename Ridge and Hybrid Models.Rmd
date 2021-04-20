@@ -1,0 +1,154 @@
+---
+title: "Ridge and Hybrid Models"
+author: "Andy Ackerman"
+date: "4/15/2021"
+output: html_document
+---
+
+```{r}
+library(logistf)
+Df<-read.csv("breastcancer.csv")
+attach(Df)
+names(Df)
+
+head(Df)
+
+explanatory<-Df[,3:32]
+EXPL<-scale(explanatory)
+
+#check OLS assumptions
+diag<-integer()
+for(i in 1:length(Diag)){
+  if (Diag[i]=="M"){
+    diag[i]=1
+  }
+  else{
+    diag[i]=0
+  }
+}
+#this OLS does not even converge.  shrinkage absolutely necessary for estimation
+baseols<-glm(diag~EXPL, family="binomial", data=Df)
+#this adds a small penalty, but even this is not enough to induce convergence with 32 features
+base2ols<-logistf(diag ~ EXPL, data = Df)
+
+#scale data as a whole
+df<-cbind(Df[,1:2],EXPL)
+
+library(tidyverse)
+library(caret)
+library(glmnet)
+
+#create partition in the set
+set.seed(123)
+training.sample<-df$Diag %>% createDataPartition(p=0.8, list = FALSE)
+train.data<-df[training.sample,]
+test.data<-df[-training.sample,]
+
+#convert response to numerical 
+#Malignant is coded as 1
+x<-model.matrix(Diag~., train.data)[,3:32]
+y<-ifelse(train.data$Diag == "M", 1,0)
+
+#fit ridge model.  use cross validation to compute best lambda 
+cv.rid <- cv.glmnet(x, y, alpha = 0, family = "binomial")
+plot(cv.rid)
+
+#first a model with minimum lambda
+ridge1<-glmnet(x,y, family="binomial", alpha =0, lambda=cv.rid$lambda.min)
+coef(ridge1)
+
+#now with a lambda that balances complexity and fit (lies within one SE of optimal lambda)
+ridge2<-glmnet(x,y, family="binomial", alpha=0, lambda=cv.rid$lambda.1se)
+coef(ridge2)
+
+X.test<-model.matrix(Diag~., test.data)[,3:32]
+prob1<-ridge1 %>% predict(newx=X.test)
+predicted.classes1<-ifelse(prob1>0.5, "M", "B")
+observed.classes1<-test.data$Diag
+mean(predicted.classes1==observed.classes1)
+#97.34513% accuracy
+
+
+x.test<-model.matrix(Diag~., test.data)[,3:32]
+prob2<-ridge2 %>% predict(newx=x.test)
+predicted.classes2<-ifelse(prob2>0.5, "M", "B")
+observed.classes2<-test.data$Diag
+mean(predicted.classes2==observed.classes2)
+#96.46018% accuracy
+
+```
+
+
+
+```{r}
+#let's try hybrid models
+
+cv.hybrid <- cv.glmnet(x, y, alpha = 0.5, family = "binomial")
+plot(cv.hybrid)
+
+#first a model with minimum lambda
+hybrid1<-glmnet(x,y, family="binomial", alpha =0.5, lambda=cv.hybrid$lambda.min)
+coef(hybrid1)
+
+#now with a lambda that balances complexity and fit (lies within one SE of optimal lambda)
+hybrid2<-glmnet(x,y, family="binomial", alpha=0.5, lambda=cv.rid$lambda.1se)
+coef(hybrid2)
+
+test<-model.matrix(Diag~., test.data)[,3:32]
+rob1<-hybrid1 %>% predict(newx=test)
+redicted.classes1<-ifelse(rob1>0.5, "M", "B")
+bserved.classes1<-test.data$Diag
+mean(redicted.classes1==bserved.classes1)
+#99.11504% accuracy
+
+
+test<-model.matrix(Diag~., test.data)[,3:32]
+rob2<-hybrid2 %>% predict(newx=test)
+redicted.classes2<-ifelse(rob2>0.5, "M", "B")
+bserved.classes2<-test.data$Diag
+mean(redicted.classes2==bserved.classes2)
+#96.46018% accuracy
+
+
+#let's try confusion matrix on hybrid1
+
+#let's try confusion matrices to further test performance
+
+#need extra packages in case of no false negatives 
+library(cvms)
+library(broom)  
+library(tibble) 
+library(ggimage)
+library(rsvg)
+
+#convert into M,B into 1,0
+Predict<-integer()
+Tar<-integer()
+for(i in 1:length(redicted.classes1)){
+  if (redicted.classes1[i]=="M"){
+    Predict[i]=1
+  }
+  else{
+    Predict[i]=0
+  }
+  if (bserved.classes1[i]=="M"){
+    Tar[i]=1
+  }
+  else{
+    Tar[i]=0
+  }
+}
+Tab <- tibble("target" = Tar,
+                     "prediction" = Predict
+)
+
+eval <- evaluate(Tab,
+                 target_col = "target",
+                 prediction_cols = "prediction",
+                 type = "binomial")
+
+
+conf_mat2 <- eval$`Confusion Matrix`[[1]]
+plot_confusion_matrix(conf_mat2)
+
+```

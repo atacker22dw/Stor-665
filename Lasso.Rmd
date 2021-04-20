@@ -1,0 +1,198 @@
+---
+title: "Final Project"
+author: "Andy Ackerman"
+date: "4/1/2021"
+output: html_document
+---
+
+# Data Visualization
+```{r}
+#maybe try PCA and pairwaise scatterplot
+
+
+library(GGally)
+library(ggplot2)
+library(ggfortify)
+library(pheatmap)
+
+Df<-read.csv("breastcancer.csv")
+attach(Df)
+names(Df)
+
+head(Df)
+
+
+
+#clean these up with ggplot
+explanatory<-Df[,3:32]
+EXPL<-scale(explanatory)
+boxplot(explanatory)
+pca<-prcomp(EXPL, scale.=FALSE)
+summary(pca)
+autoplot(pca, colour = "mrad")
+
+
+#scale to have comparable axis
+boxplot(EXPL)
+heatmap(EXPL)
+#scale data as a whole
+df<-cbind(Df[,1:2],EXPL)
+
+
+ggparcoord(data = df[,3:32],
+  scale = "uniminmax", alphaLines = 0.01) + 
+  ylab("PCP of Global Fire Data") +
+  theme_bw() +
+  theme(axis.text.x  = element_text(angle=315, vjust=1.0, hjust=0.0, size=14),
+        axis.title.x = element_blank(), 
+        axis.text.y = element_blank(), axis.ticks.y = element_blank() + scale_color_manual(values = c(rgb(0, 0, 0, 0.2), "red")))
+
+
+
+```
+
+
+
+# Initial Lasso Modelling 
+
+```{r}
+
+#let's measure the run-time
+start.time <- Sys.time()
+
+library(tidyverse)
+library(caret)
+library(glmnet)
+
+#create partition in the set
+set.seed(123)
+training.sample<-df$Diag %>% createDataPartition(p=0.8, list = FALSE)
+train.data<-df[training.sample,]
+test.data<-df[-training.sample,]
+
+#convert response to numerical 
+#Malignant is coded as 1
+x<-model.matrix(Diag~., train.data)[,3:32]
+y<-ifelse(train.data$Diag == "M", 1,0)
+
+#fit lasso model.  use cross validation to compute best lambda 
+cv.las <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+plot(cv.las)
+
+#first a model with minimum lambda
+las1<-glmnet(x,y, family="binomial", alpha =1, lambda=cv.las$lambda.min)
+coef(las1)
+
+#now with a lambda that balances complexity and fit (lies within one SE of optimal lambda)
+las2<-glmnet(x,y, family="binomial", alpha=1, lambda=cv.las$lambda.1se)
+coef(las2)
+
+
+x.test<-model.matrix(Diag~., test.data)[,3:32]
+prob2<-las2 %>% predict(newx=x.test)
+predicted.classes2<-ifelse(prob2>0.5, "M", "B")
+observed.classes2<-test.data$Diag
+mean(predicted.classes2==observed.classes2)
+#98.23009% accuracy
+
+#let's try confusion matrices to further test performance
+
+#need extra packages in case of no false negatives 
+library(cvms)
+library(broom)  
+library(tibble) 
+library(ggimage)
+library(rsvg)
+
+#convert into M,B into 1,0
+predict<-integer()
+tar<-integer()
+for(i in 1:length(predicted.classes2)){
+  if (predicted.classes2[i]=="M"){
+    predict[i]=1
+  }
+  else{
+    predict[i]=0
+  }
+  if (observed.classes2[i]=="M"){
+    tar[i]=1
+  }
+  else{
+    tar[i]=0
+  }
+}
+tab <- tibble("target" = tar,
+                     "prediction" = predict
+)
+
+eval <- evaluate(tab,
+                 target_col = "target",
+                 prediction_cols = "prediction",
+                 type = "binomial")
+
+
+conf_mat <- eval$`Confusion Matrix`[[1]]
+plot_confusion_matrix(conf_mat)
+
+#measuring run-time
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+#consider OLS Assumptions:  Doing this here becuase we converted M,B to 0,1 
+
+
+
+```
+
+# Maybe look into a confusion matrix for predictive accurary.  shouldnt be the biggest deal since we are testing benign vs malignant not holistically healthy vs cancer, but still a good metric.
+
+
+
+# Influential Observations 
+```{r}
+library(binom)
+library(car)
+# to compute examine influential observations, we will have to rederive a glm using the specified covariates.  This is conformable with cooks distance and DFBETA in a way that elastic net is not
+
+# this is an area of current research can mention this in paper
+
+selected.var.index <- which(las2$beta!= 0)
+new.x<-x[,selected.var.index]
+
+distilled.dat <- data.frame(y,x[,selected.var.index])
+
+
+#compute the logistic regression
+base.glm <- glm(y~.,family=binomial,data=distilled.dat, control=glm.control(maxit = 1000))
+summary(base.glm)
+
+#compute cooks d-statistic and plot
+cd <- cooks.distance(base.glm) 
+plot(cd,pch="*",cex=2,main="Influential observations by the Cook's Distance",ylab="Cook's distance",xlab="Observation")
+abline(a=4*mean(cd,na.rm=T),b=0,col="red") 
+
+#influential observations
+which(cd>4*mean(cd))
+#outliers
+outlierTest(base.glm)
+#no outliers found
+
+influencePlot(base.glm, id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance")
+
+influenceIndexPlot(base.glm) 
+
+
+
+#wholesale, need to work on interpretation of particularly plots.  It would seem that no points are in need of removal.  Check with liu to see if this is a viable practice.  something may be slightly off with model, it is predicting values that arent zero or one.  need to check
+
+
+
+```
+
+# Future work
+
+Multinomial regression used to predict not only malignancy but also stage.  
+
+as far as my model in concerned maybe linearity assumption could be suspect or logit transformation could be improved upon (just two that he mentioned.  need to think if these are applicable)
+
