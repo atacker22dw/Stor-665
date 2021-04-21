@@ -2,7 +2,9 @@
 title: "Final Project"
 author: "Andy Ackerman"
 date: "4/1/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # Data Visualization
@@ -145,7 +147,7 @@ time.taken
 
 ```
 
-# Maybe look into a confusion matrix for predictive accurary.  shouldnt be the biggest deal since we are testing benign vs malignant not holistically healthy vs cancer, but still a good metric.
+
 
 
 
@@ -180,7 +182,7 @@ outlierTest(base.glm)
 
 influencePlot(base.glm, id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance")
 
-influenceIndexPlot(base.glm) 
+influenceIndexPlot(base.glm, vars= c("Cook","Bonf")) 
 
 
 

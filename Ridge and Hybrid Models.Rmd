@@ -2,7 +2,9 @@
 title: "Ridge and Hybrid Models"
 author: "Andy Ackerman"
 date: "4/15/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r}
@@ -37,6 +39,7 @@ df<-cbind(Df[,1:2],EXPL)
 library(tidyverse)
 library(caret)
 library(glmnet)
+library(knitr)
 
 #create partition in the set
 set.seed(123)
@@ -75,6 +78,17 @@ predicted.classes2<-ifelse(prob2>0.5, "M", "B")
 observed.classes2<-test.data$Diag
 mean(predicted.classes2==observed.classes2)
 #96.46018% accuracy
+
+#table of results
+
+x<-data.frame(c("Mean Text", "Standard Error Radius", "Worst Radius", "Worst Texture", "Worst Smoothness", "Worst Concavity", "Worst Concave Points", "Worst Symmetry"), c( 0.1070996, 0.8929669, 2.6200537, 0.7634665, 0.2502963, 0.1985056, 1.3022477, 0.1769355))
+
+kable(x,col.names=c("Covariate", "Estimate"), align="lr", caption="Final Lasso Model with Complexity Adjusted Lambda")
+
+
+y<-data.frame(c("Lasso", "Lasso","Hybrid", "Hybrid","Ridge", "Ridge"), c("Minimum Lambda", "Complex-Lambda", "Minimum Lambda", "Complex-Lambda","Minimum Lambda", "Complex-Lambda"), "98.23", "98.23", "99.12", "96.46", "97.34", "96.46")
+
+kable(y,col.names=c("Model", "Lambda Type", "Predictive Accuracy"),  align="lcr", caption="Predictive Accuracy by Model")
 
 ```
 
