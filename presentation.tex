@@ -1,4 +1,5 @@
 \documentclass[12pt]{beamer}
+\hypersetup{pdfpagemode=FullScreen}
 \usetheme{Berkeley}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -46,7 +47,7 @@
   \item High Dimensional Classification Problem
   \end{itemize}
 \end{columns}
-\begin{textblock*}{2cm}(2.5cm,6cm)
+\begin{textblock*}{2cm}(2.7cm,6cm)
 \includegraphics[height=2 cm]{mortality.png}
 \end{textblock*}
 
@@ -56,19 +57,57 @@
 %------------------------------------------------
 
 \begin{frame}{Biological Intuition}
-\begin{alertblock}{Definition}
-"Cancer: A term for diseases in which abnormal cells divide without control and can invade nearby tissues." -- National Cancer Institute
-\end{alertblock}
-\begin{block}{Characterization}
-"...the cancerous cell is characterized by a large nucleus, having an irregular size and shape, the nucleoli are prominent, the cytoplasm is scarce and intensely colored or, on the contrary, is pale." -- Comparative Oncology
+
+\begin{block}{Technique}
+"In an FNA biopsy, the doctor uses a very thin, hollow needle attached to a syringe to withdraw (aspirate) a small amount of tissue or fluid from a suspicious area." -- American Cancer Society
 \end{block}
+
+\begin{alertblock}{Characterization}
+"...the cancerous cell is characterized by a large nucleus, having an irregular size and shape, the nucleoli are prominent, the cytoplasm is scarce and intensely colored or, on the contrary, is pale." -- Comparative Oncology
+\end{alertblock}
 \end{frame}
+
+
 
 
 %------------------------------------------------
 
+\begin{frame}{Data Visualization}
 
-\begin{frame}{Data Description}
+ \begin{columns}
+\column{.99\textwidth}\vspace{-3.7cm} 
+\setbeamertemplate{itemize items}[ball]
+  \begin{itemize}
+    \item 569 Unique Observations of 32 Distinct Features
+    \item Derived Covariates
+  	\begin{itemize}
+		\item Induces Clustered Structure
+	\end{itemize}
+  \begin{textblock*}{2cm}(4cm,5cm)
+\begin{figure}[htbp]
+\begin{minipage}{.5\textwidth}
+	\hspace*{-2.4cm}\includegraphics[scale=.25]{pca.png}
+\end{minipage}%
+
+\end{figure}
+\begin{figure}[htbp]
+\begin{minipage}{.5\textwidth}
+	\vspace{-4.5cm}\hspace*{3.8cm}\includegraphics[scale=.32]{heat.png}
+\end{minipage}%
+
+\end{figure}
+
+
+
+
+
+
+\end{textblock*}
+  
+  \end{itemize}
+\end{columns}
+
+
 
 \end{frame}
 
@@ -77,24 +116,108 @@
 
 
 \section{Methodology}
-\begin{frame}{f3}
 
+\begin{frame}{Modeling}
+ \begin{columns}
+\column{.99\textwidth}
+ \begin{block}{Logistic Data Representation}
+    \begin{equation}    % <--- deleted empty lines
+            Y_i \thicksim Bin(1,\pi_i), X_i, i \in [1,...,32]. 
+    \end{equation}
+    \end{block}
+    \begin{block}{Canonical Link Function}
+    \begin{equation}    % <--- deleted empty lines
+            g(\pi)=log(\frac{\pi}{1-\pi})=\beta_0+\beta_1X_1+...+\beta_{32}X_{32}.
+    \end{equation}
+\end{block}
+\end{columns}
 \end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Estimation}
+
+ \begin{columns}
+\column{.99\textwidth}
+\begin{block}{Penalization}
+    \begin{equation}    % <--- deleted empty lines
+    \begin{aligned}
+            (y-X\beta)^T(y-X\beta); \text{subject to} \sum_{j=1}^{32} \beta_j^2 \le t^2 ,\\
+(y-X\beta)^T(y-X\beta); \text{subject to} \sum_{j=1}^{32} |\beta_j| \le t
+     \end{aligned}
+     \end{equation}
+    \end{block}
+
+    \begin{block}{Coordinate Descent Optimization}
+    \begin{equation}    % <--- deleted empty lines
+           x_n^{(k)} \in \arg\min_{x_2} f(x_1^{(k)},x_2^{(k)},x_3^{(k)},...,x_n^{(k)}).
+    \end{equation}
+\end{block}
+\end{columns}
+\end{frame}
+
 
 %------------------------------------------------
 
 \section{Results}
 
-\begin{frame}{Results}
+\begin{frame}{Model Selection and Assessment}
+
+\begin{columns}
+\column{.99\textwidth}
+\setbeamertemplate{itemize items}[ball]
+  \begin{itemize}
+  \item Occam's Razor/Law of Parsimony
+  \end{itemize}
+  \end{columns}
+
+
+\begin{center}
+\includegraphics[height=4 cm]{accuracy1.png}
+\end{center}
 
 
 \end{frame}
 
 %----------------------------------------------------------------------------------------
+
+\begin{frame}{Model Interpretation}
+
+\begin{columns}
+\column{.99\textwidth}
+\setbeamertemplate{itemize items}[ball]
+  \begin{itemize}
+  \item Reduced Model Complexity by 75\%
+  \end{itemize}
+  \end{columns}
+
+
+\begin{center}
+\includegraphics[height=5 cm]{table1.1.png}
+\end{center}
+
+\end{frame}
+
+
+
+
+%----------------------------------------------------------------------------------------
+
+
+
 \section{Conclusion}
 
 \begin{frame}{Conclusion}
 
+\begin{columns}
+\column{.99\textwidth}
+\setbeamertemplate{itemize items}[ball]
+  \begin{itemize}
+  \item Proposed Method Marginally Outperforms Established Linear Programming Method
+  \item Distilled Model is Far More Cost-Effective and Resource Efficient
+  \item Potential for Future Work with Complementary Log-Log Link
+ \end{itemize}
+\end{columns}
 
 \end{frame}
 
